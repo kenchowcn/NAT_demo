@@ -14,32 +14,6 @@
 
 static int g_UUID = 0;
 
-int initRecvSock(int port, struct sockaddr_in *si_recv)
-{
-    int sock;
-    //struct sockaddr_in si_recv;
-
-    if ((sock=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-    {
-        perror("socket()");
-        return -1;
-    }
-
-    memset(si_recv, 0, sizeof(struct sockaddr_in));
-
-    si_recv->sin_family = AF_INET;
-    si_recv->sin_port = htons(port);
-    si_recv->sin_addr.s_addr = htonl(INADDR_ANY);
-
-    if(bind(sock, (struct sockaddr*)si_recv, sizeof(struct sockaddr_in)) == -1)
-    {
-        perror("bind()");
-        return -1;
-    }
-
-    return sock;
-}
-
 int initSendSock()
 {
     int sock;
@@ -89,7 +63,7 @@ int main(int argc, char *argv[])
     fd_set rset;
     struct sockaddr_in si_remote;
     int slen = sizeof(struct sockaddr_in);
-    int ret;
+    int ret, i;
     MSG_T msg;
 
     int send_sock = initSendSock();
@@ -137,10 +111,14 @@ int main(int argc, char *argv[])
         if (HOLE_IS_READY == getEvent(&msg))
         {
             int new_sock = initSendSock();
-            if (-1 == sendto(new_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
+
+            for (i=0; i<3; i++)
             {
-                perror("sendto()");
-                return -1;
+                if (-1 == sendto(new_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
+                {
+                    perror("sendto()");
+                    return -1;
+                }
             }
             printf("[%d]Local UUID %d send Nat Msg to UUID %d finish.\n", __LINE__, getDESTUUID(&msg), getSRCUUID(&msg));
         }
@@ -158,7 +136,6 @@ int main(int argc, char *argv[])
 
         //printf("Input a local recv port: ");
         //scanf("%d", &port);
-        //recv_sock = initRecvSock(port, &si_recv);
         recv_sock = initSendSock();
         printf("[%d]Start waiting MAKE_A_HOLE ...\n", __LINE__);
 

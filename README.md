@@ -1,1 +1,3 @@
-# bi_udp_NAT
+# NAT_demo
+
+This is a NAPT(Natwork Address Port Translator) demo over UDP. 
