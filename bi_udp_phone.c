@@ -158,7 +158,8 @@ int main(int argc, char *argv[])
 
         //printf("Input a local recv port: ");
         //scanf("%d", &port);
-        recv_sock = initRecvSock(port, &si_recv);
+        //recv_sock = initRecvSock(port, &si_recv);
+        recv_sock = initSendSock();
         printf("[%d]Start waiting MAKE_A_HOLE ...\n", __LINE__);
 
         memset(&msg, 0, sizeof(MSG_T));
