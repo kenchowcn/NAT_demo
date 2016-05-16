@@ -72,7 +72,8 @@ int register_UUID(int sock, struct sockaddr_in *si_remote)
     msg.event = REGISTER;
     msg.SRC_UUID = g_UUID;
 
-    return sendRequest(sock, si_remote, &msg);
+    sendRequest(sock, si_remote, &msg);
+    return waitMsg(sock, si_remote);
 }
 
 int apply_make_hole(int sock, struct sockaddr_in *si_remote, int uuid, MSG_T *msg)
@@ -112,7 +113,7 @@ int main(int argc, char *argv[])
     printf("# ");
     scanf("%d", &ret);
 
-    if (1 == ret) // send
+    if (1 == ret) // send 2
     {
         int uuid;
 
@@ -130,22 +131,25 @@ int main(int argc, char *argv[])
         }
         printf("[%d]UUID %d want make_a_hole to UUID %d. Return -> succeed \n", __LINE__, g_UUID, uuid);
 
+        waitMsg(send_sock, &si_remote, &msg);
+
         // all thing done, than start sending
         if (HOLE_IS_READY == getEvent(&msg))
         {
-            if (-1 == sendto(send_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
+            int new_sock = initSendSock();
+            if (-1 == sendto(new_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
             {
                 perror("sendto()");
                 return -1;
             }
-            printf("[%d]Local UUID %d send Nat Msg to UUID %d finish.\n", __LINE__, getSRCUUID(&msg), getDESTUUID(&msg));
+            printf("[%d]Local UUID %d send Nat Msg to UUID %d finish.\n", __LINE__, getDESTUUID(&msg), getSRCUUID(&msg));
         }
         else
         {
             printf("[%d]The event should be HOLE_IS_READY, but %s is not what I want.\n", __LINE__, getEventStr(&msg));
         }
     }
-    else //recv
+    else //recv 1
     {
         MSG_T req_msg;
         int port = 65330, recv_sock;
@@ -175,7 +179,7 @@ int main(int argc, char *argv[])
             req_msg.SRC_UUID = getDESTUUID(&msg);
             req_msg.DEST_UUID = getSRCUUID(&msg);
             // send HOLE_IS_READY use new sock
-            if (0 != sendOneWay(recv_sock, &si_recv, &req_msg))
+            if (0 != sendOneWay(recv_sock, &si_remote, &req_msg))
             {
                 printf("failed.\n");
             }
@@ -187,11 +191,11 @@ int main(int argc, char *argv[])
             printf("[%d]Reply MAKE_A_HOLE succeed, and wait msg from the hole ...\n", __LINE__);
 
             // all thing ready, than start retrieving
-            if (recvfrom(recv_sock, &buff[0], sizeof(buff), 0, (struct sockaddr*)&si_recv, &slen) == -1)
+            if (recvfrom(recv_sock, &buff[0], sizeof(buff), 0, (struct sockaddr*)&si_remote, &slen) == -1)
             {
                return -1;
             }
-            printf("Recv from NAT: \n", buff);
+            printf("Recv from NAT: %s\n", buff);
         }
         else
         {

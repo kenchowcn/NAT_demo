@@ -181,11 +181,12 @@ int ParseMsg(int sock)
         {
             updateHoleAddr(getDESTUUID(&msg), &si_remote);
             req_msg.event = HOLE_IS_READY;
-
-            // pass to dest
-            getConnByUUID(getDESTUUID(&msg), &si_remote);
             req_msg.SRC_UUID = getSRCUUID(&msg);
             req_msg.DEST_UUID = getDESTUUID(&msg);
+            memcpy(&req_msg.nat_si, &si_remote, sizeof(struct sockaddr_in));
+
+            // pass to DEST
+            getConnByUUID(getDESTUUID(&msg), &si_remote);
             sendRequest(sock, &si_remote, &req_msg);
             break;
         }

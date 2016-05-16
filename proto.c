@@ -65,8 +65,16 @@ int sendRequest(int sock, struct sockaddr_in *si_remote, MSG_T *msg)
         perror("sendto");
         return -1;
     }
+    return 0;
+}
 
-    // wait confirm
+int waitMsg(int sock, struct sockaddr_in *si_remote, MSG_T *msg)
+{
+    int slen = sizeof(struct sockaddr_in);
+
+    if (NULL == msg)
+        return -1;
+
     memset(msg, 0, sizeof(MSG_T));
     if (recvfrom(sock, msg, sizeof(MSG_T), 0, (struct sockaddr*)si_remote, &slen) == -1)
     {
@@ -74,7 +82,7 @@ int sendRequest(int sock, struct sockaddr_in *si_remote, MSG_T *msg)
        return -1;
     }
 
-    printf("[%d][EVENT:%s][SRCUUID:%d][DESTUUID:%d]", __LINE__, getEventStr(msg), getSRCUUID(msg), getDESTUUID(msg));
+    printf("[%d][EVENT:%s][SRCUUID:%d][DESTUUID:%d]\n", __LINE__, getEventStr(msg), getSRCUUID(msg), getDESTUUID(msg));
 
     return 0;
 }
