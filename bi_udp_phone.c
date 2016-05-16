@@ -179,6 +179,7 @@ int main(int argc, char *argv[])
             req_msg.SRC_UUID = getDESTUUID(&msg);
             req_msg.DEST_UUID = getSRCUUID(&msg);
             // send HOLE_IS_READY use new sock
+            fillRemoteInfo(SERVER_IP, SERVER_PORT, &si_remote);
             if (0 != sendOneWay(recv_sock, &si_remote, &req_msg))
             {
                 printf("failed.\n");
