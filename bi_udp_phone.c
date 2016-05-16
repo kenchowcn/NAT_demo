@@ -70,7 +70,7 @@ int register_UUID(int sock, struct sockaddr_in *si_remote)
     MSG_T msg;
     memset(&msg, 0, sizeof(MSG_T));
     msg.event = REGISTER;
-    msg.conn.SRC_UUID = g_UUID;
+    msg.SRC_UUID = g_UUID;
 
     return sendRequest(sock, si_remote, &msg);
 }
@@ -78,8 +78,8 @@ int register_UUID(int sock, struct sockaddr_in *si_remote)
 int apply_make_hole(int sock, struct sockaddr_in *si_remote, int uuid, MSG_T *msg)
 {
     msg->event = APPLY_MAKE_A_HOLE;
-    msg->conn.SRC_UUID = g_UUID;
-    msg->conn.DEST_UUID = uuid;
+    msg->SRC_UUID = g_UUID;
+    msg->DEST_UUID = uuid;
     return sendRequest(sock, si_remote, msg);
 }
 
@@ -121,8 +121,8 @@ int main(int argc, char *argv[])
 
         memset(&msg, 0, sizeof(MSG_T));
         msg.event = APPLY_MAKE_A_HOLE;
-        msg.conn.SRC_UUID = g_UUID;
-        msg.conn.DEST_UUID = uuid;
+        msg.SRC_UUID = g_UUID;
+        msg.DEST_UUID = uuid;
         if (0 != sendRequest(send_sock, &si_remote, &msg))
         {
             printf("[%d]UUID %d want make_a_hole to UUID %d. Return -> failed\n", __LINE__, g_UUID, uuid);
@@ -130,20 +130,12 @@ int main(int argc, char *argv[])
         }
         printf("[%d]UUID %d want make_a_hole to UUID %d. Return -> succeed \n", __LINE__, g_UUID, uuid);
 
-        // wait hole is ready
-        // memset(&msg, 0, sizeof(MSG_T));
-        // if (recvfrom(send_sock, &msg, sizeof(MSG_T), 0, (struct sockaddr*)&si_remote, &slen) == -1)
-        // {
-        //     perror("recvfrom");
-        //    return -1;
-        // }
-
         // all thing done, than start sending
         if (HOLE_IS_READY == getEvent(&msg))
         {
-            if (-1 == sendto(send_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.conn.nat_si, slen))
+            if (-1 == sendto(send_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
             {
-                printf("Local UUID %d send Nat Msg to UUID %d failed.\n", getSRCUUID(&msg), getDESTUUID(&msg));
+                perror("sendto()");
                 return -1;
             }
             printf("[%d]Local UUID %d send Nat Msg to UUID %d finish.\n", __LINE__, getSRCUUID(&msg), getDESTUUID(&msg));
@@ -156,7 +148,7 @@ int main(int argc, char *argv[])
     else //recv
     {
         MSG_T req_msg;
-        int port = 9000, recv_sock;
+        int port = 65330, recv_sock;
         char buff[20] = {0};
         struct sockaddr_in si_recv;
 
@@ -174,22 +166,15 @@ int main(int argc, char *argv[])
            return -1;
         }
 
-        // rely ACK
-        memset(&req_msg, 0, sizeof(MSG_T));
-        req_msg.event = ACK;
-        if (0 != sendOneWay(recv_sock, &si_recv, &req_msg))
-        {
-            printf("Reply ACK failed.\n");
-        }
-
         if (MAKE_A_HOLE == getEvent(&msg))
         {
             printf("[%d]From UUID %d want make_a_hole to UUID %d, Return -> ",__LINE__, getSRCUUID(&msg), getDESTUUID(&msg));
 
-            // make a hole, if event arrived, than server tell the other side HOLE_IS_READY
             memset(&req_msg, 0, sizeof(MSG_T));
             req_msg.event = HOLE_IS_READY;
-            getConnFromMsg(&msg, &req_msg.conn);
+            req_msg.SRC_UUID = getDESTUUID(&msg);
+            req_msg.DEST_UUID = getSRCUUID(&msg);
+            // send HOLE_IS_READY use new sock
             if (0 != sendOneWay(recv_sock, &si_recv, &req_msg))
             {
                 printf("failed.\n");
@@ -202,7 +187,7 @@ int main(int argc, char *argv[])
             printf("[%d]Reply MAKE_A_HOLE succeed, and wait msg from the hole ...\n", __LINE__);
 
             // all thing ready, than start retrieving
-            if (recvfrom(recv_sock, &buff, sizeof(buff), 0, (struct sockaddr*)&si_recv, &slen) == -1)
+            if (recvfrom(recv_sock, &buff[0], sizeof(buff), 0, (struct sockaddr*)&si_recv, &slen) == -1)
             {
                return -1;
             }

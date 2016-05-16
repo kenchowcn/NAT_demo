@@ -45,7 +45,7 @@ int addRegister(unsigned int UUID, struct sockaddr_in *si_remote)
     printf("[%d]Register UUID %d, Return -> ", __LINE__, UUID);
 
     // full
-    if (0 != g_conns_t[MAX_REGISTERS-1].SRC_UUID)
+    if (0 != g_conns_t[MAX_REGISTERS-1].UUID)
     {
         printf("space full.\n");
         return -1;
@@ -54,9 +54,9 @@ int addRegister(unsigned int UUID, struct sockaddr_in *si_remote)
     // find empty one
     for (i=0; i<MAX_REGISTERS; i++)
     {
-        if (0 == g_conns_t[i].SRC_UUID)
+        if (0 == g_conns_t[i].UUID)
             break;
-        if (UUID == g_conns_t[i].SRC_UUID)
+        if (UUID == g_conns_t[i].UUID)
         {
             printf("already exist.\n");
             return -1;
@@ -64,7 +64,7 @@ int addRegister(unsigned int UUID, struct sockaddr_in *si_remote)
     }
 
     memset(&g_conns_t[i], 0, sizeof(CONNS_T));
-    g_conns_t[i].SRC_UUID = UUID;
+    g_conns_t[i].UUID = UUID;
     memcpy(&g_conns_t[i].reg_si, si_remote, sizeof(struct sockaddr_in));
 
     printf("succeed.\n", UUID);
@@ -76,7 +76,7 @@ int delRegister(unsigned int UUID)
     int i;
     for (i=0; i<MAX_REGISTERS; i++)
     {
-        if (UUID == g_conns_t[i].SRC_UUID)
+        if (UUID == g_conns_t[i].UUID)
         {
             memset(&g_conns_t[i], 0, sizeof(CONNS_T));
             memmove(&g_conns_t[i], &g_conns_t[i]+sizeof(CONNS_T), (MAX_REGISTERS-i-1)*sizeof(CONNS_T));
@@ -87,34 +87,19 @@ int delRegister(unsigned int UUID)
     return -1;
 }
 
-int getConnBySRCUUID(unsigned int UUID, CONNS_T *conn)
+int getConnByUUID(unsigned int UUID, struct sockaddr_in *si_remote)
 {
     int i;
-    printf("[%d]Get Conn by src UUID %d, Return -> ", __LINE__, UUID);
+    printf("[%d]Get si_remote by src UUID %d, Return -> ", __LINE__, UUID);
+
+    if (si_remote)
+      memset(si_remote, 0, sizeof(struct sockaddr_in));
 
     for (i=0; i<MAX_REGISTERS; i++)
     {
-        if (UUID == g_conns_t[i].SRC_UUID)
+        if (UUID == g_conns_t[i].UUID)
         {
-            memcpy(conn, &g_conns_t[i], sizeof(CONNS_T));
-            printf("succeed.\n");
-            return 0;
-        }
-    }
-    printf("failed.\n");
-    return -1;
-}
-
-int getConnByDESTUUID(unsigned int UUID, CONNS_T *conn)
-{
-    int i;
-    printf("[%d]Get Conn by Dest UUID %d, Return -> ", __LINE__, UUID);
-
-    for (i=0; i<MAX_REGISTERS; i++)
-    {
-        if (UUID == g_conns_t[i].DEST_UUID)
-        {
-            memcpy(conn, &g_conns_t[i], sizeof(CONNS_T));
+            memcpy(si_remote, &g_conns_t[i].reg_si, sizeof(struct sockaddr_in));
             printf("succeed.\n");
             return 0;
         }
@@ -129,7 +114,7 @@ int updateHoleAddr(unsigned int UUID, struct sockaddr_in *si_remote)
     printf("Update Hole addr UUID %d, Return -> ", UUID);
     for (i=0; i<MAX_REGISTERS; i++)
     {
-        if (UUID == g_conns_t[i].SRC_UUID)
+        if (UUID == g_conns_t[i].UUID)
         {
             memcpy(&g_conns_t[i].nat_si, si_remote, sizeof(struct sockaddr_in));
             printf("succeed.\n");
@@ -155,7 +140,8 @@ int ParseMsg(int sock)
         perror("recvfrom");
         return -1;
     }
-    printf("[%d]UUID %d, Event %s, RecvMsg From %s:%d\n", __LINE__, getSRCUUID(&msg), getEventStr(&msg), inet_ntoa(si_remote.sin_addr), ntohs(si_remote.sin_port));
+
+    printf("[%d]SRC_UUID %d, DEST_UUID %d, Event %s, RecvMsg From %s:%d\n", __LINE__, getSRCUUID(&msg), getDESTUUID(&msg), getEventStr(&msg), inet_ntoa(si_remote.sin_addr), ntohs(si_remote.sin_port));
 
     if (MAGICID != getMagicID(&msg))
     {
@@ -181,25 +167,26 @@ int ParseMsg(int sock)
         }
         case APPLY_MAKE_A_HOLE:
         {
-            // reply requesting
-            // req_msg.event = ACK;
-            // sendOneWay(sock, &si_remote, &req_msg);
-
             // assume the end point haven't make hole yet
             req_msg.event = MAKE_A_HOLE;
-            // get destination info, and send him to make a hole requesting
-            getConnBySRCUUID(getDESTUUID(&msg), &req_msg.conn);
-            req_msg.conn.SRC_UUID = getSRCUUID(&msg);
-            req_msg.conn.DEST_UUID = getDESTUUID(&msg);
-            sendRequest(sock, &req_msg.conn.reg_si, &req_msg);
+
+            // get destination si info, and send him to make a hole requesting
+            getConnByUUID(getDESTUUID(&msg), &si_remote);
+            req_msg.SRC_UUID = getSRCUUID(&msg);
+            req_msg.DEST_UUID = getDESTUUID(&msg);
+            sendRequest(sock, &si_remote, &req_msg);
             break;
         }
         case HOLE_IS_READY: // record end point hole addr
         {
-            updateHoleAddr(getSRCUUID(&msg), &si_remote);
+            updateHoleAddr(getDESTUUID(&msg), &si_remote);
             req_msg.event = HOLE_IS_READY;
-            getConnBySRCUUID(getSRCUUID(&msg), &req_msg.conn);
-            sendRequest(sock, &req_msg.conn.reg_si, &req_msg);
+
+            // pass to dest
+            getConnByUUID(getDESTUUID(&msg), &si_remote);
+            req_msg.SRC_UUID = getSRCUUID(&msg);
+            req_msg.DEST_UUID = getDESTUUID(&msg);
+            sendRequest(sock, &si_remote, &req_msg);
             break;
         }
         default:

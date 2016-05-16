@@ -1,5 +1,5 @@
 #include <string.h>
-#include <malloc.h>
+//#include <malloc.h>
 #include "proto.h"
 
 unsigned int getMagicID(MSG_T *msg)
@@ -32,21 +32,14 @@ char *getEventStr(MSG_T *msg)
     return "Error";
 }
 
-
 int getSRCUUID(MSG_T *msg)
 {
-    return msg->conn.SRC_UUID;
+    return msg->SRC_UUID;
 }
 
 int getDESTUUID(MSG_T *msg)
 {
-    return msg->conn.DEST_UUID;
-}
-
-int getConnFromMsg(MSG_T *msg, CONNS_T *conn)
-{
-    memcpy(conn, &msg->conn, sizeof(CONNS_T));
-    return 0;
+    return msg->DEST_UUID;
 }
 
 int sendOneWay(int sock, struct sockaddr_in *si_remote, MSG_T *msg)

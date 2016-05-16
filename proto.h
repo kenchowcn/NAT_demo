@@ -19,8 +19,7 @@ typedef enum EVENT_e
 
 typedef struct CONNS_s
 {
-    unsigned int SRC_UUID;
-    unsigned int DEST_UUID;
+    unsigned int UUID;
     struct sockaddr_in reg_si;
     struct sockaddr_in nat_si;
 }CONNS_T;
@@ -29,5 +28,7 @@ typedef struct MSG_s
 {
     unsigned int magicID;
     unsigned int event;
-    CONNS_T conn;
+    unsigned int SRC_UUID;
+    unsigned int DEST_UUID;
+    struct sockaddr_in nat_si;
 }MSG_T;
