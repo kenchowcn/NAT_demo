@@ -114,7 +114,8 @@ int main(int argc, char *argv[])
 
             for (i=0; i<3; i++)
             {
-                if (-1 == sendto(new_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
+                if (-1 == sendto(send_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
+                // if (-1 == sendto(new_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
                 {
                     perror("sendto()");
                     return -1;
