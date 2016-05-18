@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <netinet/in.h>
 
-#define SERVER_IP           "45.78.29.98"
+#define SERVER_IP           "120.76.138.111"
+//#define SERVER_IP          "45.78.29.98"
+//
 #define SERVER_PORT         9096
 #define MAGICID             0xAAAA
 #define MAX_REGISTERS       10
