@@ -61,7 +61,7 @@ int apply_make_hole(int sock, struct sockaddr_in *si_remote, int uuid, MSG_T *ms
 int main(int argc, char *argv[])
 {
     fd_set rset;
-    struct sockaddr_in si_remote;
+    struct sockaddr_in si_remote, hole_si;
     int slen = sizeof(struct sockaddr_in);
     int ret, i;
     MSG_T msg;
@@ -154,6 +154,7 @@ int main(int argc, char *argv[])
             printf("[%d]From UUID %d want make_a_hole to UUID %d, Return -> ",__LINE__, getSRCUUID(&msg), getDESTUUID(&msg));
             // punching a hole
             memset(&req_msg, 0, sizeof(MSG_T));
+            memcpy(&hole_si, &msg.nat_si, sizeof(struct sockaddr_in));
             if (0 != sendOneWay(recv_sock, &msg.nat_si, &req_msg))
             {
                 printf("punching failed. ");
@@ -177,10 +178,10 @@ int main(int argc, char *argv[])
                 printf("reply server succeed.\n");
             }
 //printf("[%s][%d][%s]\n", __FILE__, __LINE__, __FUNCTION__);
-            printf("[%d]Reply MAKE_A_HOLE succeed, and wait msg from the hole ...\n", __LINE__);
+            printf("[%d]Reply MAKE_A_HOLE succeed, and wait msg from the hole ...%s:%d\n", __LINE__, inet_ntoa(hole_si.sin_addr), ntohs(hole_si.sin_port));
 
             // all thing ready, than start retrieving
-            if (recvfrom(recv_sock, &buff[0], sizeof(buff), 0, (struct sockaddr*)&si_remote, &slen) == -1)
+            if (recvfrom(recv_sock, &buff[0], sizeof(buff), 0, (struct sockaddr*)&hole_si, &slen) == -1)
             {
                return -1;
             }
