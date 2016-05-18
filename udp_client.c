@@ -17,12 +17,22 @@ static int g_UUID = 0;
 int initSendSock()
 {
     int sock;
+    struct sockaddr_in sin;
 
     if ((sock=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
         perror("socket()");
     }
 
+	sin.sin_addr.s_addr = INADDR_ANY;
+	sin.sin_family = AF_INET;
+	sin.sin_port = 0;
+
+	if (0 > bind(sock, (struct sockaddr*)&sin, sizeof(sin)))
+    {
+        perror("bind()");
+        return -1;
+    }
     return sock;
 }
 
@@ -110,12 +120,9 @@ int main(int argc, char *argv[])
         // all thing done, than start sending
         if (HOLE_IS_READY == getEvent(&msg))
         {
-            int new_sock = initSendSock();
-
             for (i=0; i<3; i++)
             {
-                //if (-1 == sendto(send_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
-                if (-1 == sendto(new_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
+                if (-1 == sendto(send_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
                 {
                     perror("sendto()");
                     return -1;
