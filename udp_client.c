@@ -114,8 +114,8 @@ int main(int argc, char *argv[])
 
             for (i=0; i<3; i++)
             {
-                if (-1 == sendto(send_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
-                // if (-1 == sendto(new_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
+                //if (-1 == sendto(send_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
+                if (-1 == sendto(new_sock, "Hello, I'm here", sizeof("Hello, I'm here"), 0, (struct sockaddr*)&msg.nat_si, slen))
                 {
                     perror("sendto()");
                     return -1;
@@ -152,20 +152,29 @@ int main(int argc, char *argv[])
         if (MAKE_A_HOLE == getEvent(&msg))
         {
             printf("[%d]From UUID %d want make_a_hole to UUID %d, Return -> ",__LINE__, getSRCUUID(&msg), getDESTUUID(&msg));
+            // punching a hole
+            memset(&req_msg, 0, sizeof(MSG_T));
+            if (0 != sendOneWay(recv_sock, &msg.nat_si, &req_msg))
+            {
+                printf("punching failed. ");
+            }
+            else
+            {
+                printf("punching succeed. ");
+            }
 
             memset(&req_msg, 0, sizeof(MSG_T));
             req_msg.event = HOLE_IS_READY;
             req_msg.SRC_UUID = getDESTUUID(&msg);
             req_msg.DEST_UUID = getSRCUUID(&msg);
-            // send HOLE_IS_READY use new sock
-            fillRemoteInfo(SERVER_IP, SERVER_PORT, &si_remote);
-            if (0 != sendOneWay(recv_sock, &si_remote, &req_msg))
+            // reply hole is ready
+            if (0 != sendOneWay(send_sock, &si_remote, &req_msg))
             {
-                printf("failed.\n");
+                printf("reply server failed.\n");
             }
             else
             {
-                printf("succeed.\n");
+                printf("reply server succeed.\n");
             }
 //printf("[%s][%d][%s]\n", __FILE__, __LINE__, __FUNCTION__);
             printf("[%d]Reply MAKE_A_HOLE succeed, and wait msg from the hole ...\n", __LINE__);

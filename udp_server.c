@@ -174,6 +174,7 @@ int ParseMsg(int sock)
             getConnByUUID(getDESTUUID(&msg), &si_remote);
             req_msg.SRC_UUID = getSRCUUID(&msg);
             req_msg.DEST_UUID = getDESTUUID(&msg);
+            memcpy(&req_msg.nat_si, &si_remote, sizeof(struct sockaddr_in));
             sendRequest(sock, &si_remote, &req_msg);
             break;
         }
