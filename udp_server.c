@@ -67,7 +67,7 @@ int addRegister(unsigned int UUID, struct sockaddr_in *si_remote)
     g_conns_t[i].UUID = UUID;
     memcpy(&g_conns_t[i].reg_si, si_remote, sizeof(struct sockaddr_in));
 
-    printf("succeed.\n", UUID);
+    printf("succeed.\n");
     return 0;
 }
 
