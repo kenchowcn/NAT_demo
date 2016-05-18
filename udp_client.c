@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
                     return -1;
                 }
             }
-            printf("[%d]Local UUID %d send Nat Msg to UUID %d finish.\n", __LINE__, getDESTUUID(&msg), getSRCUUID(&msg));
+            printf("[%d]Local UUID %d send Nat[%s:%d] Msg to UUID %d finish.\n", __LINE__, getDESTUUID(&msg), inet_ntoa(msg.nat_si.sin_addr), ntohs(msg.nat_si.sin_port), getSRCUUID(&msg));
         }
         else
         {
